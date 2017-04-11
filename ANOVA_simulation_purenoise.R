@@ -1,9 +1,10 @@
 library(dplyr)
 library(ggplot2)
-library(robR)
 library(reshape2)
 library(RColorBrewer)
-#####################
+
+
+# Simulations ------------------------------
 
 # Create empty data frame
 full_df <- data.frame()
@@ -12,6 +13,14 @@ full_df <- data.frame()
 n <- 0
 
 set.seed(5)
+
+# Define standard error function------
+se_func <- function (x, na.rm = FALSE) {
+  if (na.rm) 
+    x <- x[!is.na(x)]
+  sd(x)/sqrt(length(x))
+}
+
 # Simulation for a mixed effects ANOVA (one within-subject factor "Time", one between-subjects factor "Condition")
 repeat{
   
@@ -32,7 +41,7 @@ repeat{
   gg_df <- df_melt %>% 
     select(Condition, Time, value) %>% 
     group_by(Condition,Time) %>% 
-    dplyr::summarise(Value = mean(value), se = se.rob(value))
+    dplyr::summarise(Value = mean(value), se = se_func(value))
   
   # Assign means/SEMs 
   con1time1_mean <- gg_df[[3]][1]
@@ -81,12 +90,8 @@ repeat{
   }
 }
 
-# Write data file for graphing later
-#write.csv(full_df,"C:/Users/chavez.95/Google Drive/R/Studies/ANOVA_sims/full_df_aov_noise_withinsub.csv")
 
-
-# Plotting --------------------------------------
-full_df <- read.csv("C:/Users/chavez.95/Google Drive/R/Studies/ANOVA_sims/full_df_aov_noise_withinsub.csv")
+# Post-simulation analyses --------------------------------------------------------------
 
 # Sort simulation data frame and index it
 full_df <- full_df[order(full_df$p_int), ]
@@ -154,6 +159,8 @@ prop.table(table(topfifty_df$disord))
 
 
 # Model plot ----------------------------------
+# A plot of the basic effect we simulating. 
+
 Time <- as.factor(c("Level 1","Level 2","Level 1","Level 2"))
 Group <- as.factor(c("Condition 1","Condition 1","Condition 2","Condition 2"))
 Value <- c(0,0,0,1)

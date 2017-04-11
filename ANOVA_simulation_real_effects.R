@@ -12,10 +12,12 @@ noise <- c(8.00, 4.00, 2.00, 1.00)
 # Sample size vector
 ssize <- c(20,40,60,80,100)
 
-# Define standard error calculation function
-se_func <- function (x){
+# Define standard error function------
+se_func <- function (x, na.rm = FALSE) {
+  if (na.rm) 
+    x <- x[!is.na(x)]
   sd(x)/sqrt(length(x))
-  }
+}
 
 # Set random seed for reproducibility
 set.seed(6)
@@ -109,20 +111,11 @@ for(i in noise){
   }
 }
 
-# Write simulation to file
-  #write.csv(full_df,"C:/Users/chavez.95/Google Drive/R/Studies/ANOVA_sims/full_df_true_effect_within.csv")
-
-# Plot most significant interaction effecst ----------------------------------------
-
-full_df <- read.csv("C:/Users/chavez.95/Google Drive/R/Studies/ANOVA_sims/full_df_true_effect_within.csv")
+# Post-simulation analyses --------------------------------------------------------------
 
 # Rename variables in data frame
 full_df <- full_df %>% dplyr::rename(SNR = i,N = j) 
-
 full_df$SNR <- 1/full_df$SNR   #Transforms simulation standard deviation into SNR value.
-
-
-##################################################-----------
 
 # Sort data by interaction significance
 full_df_sort <- full_df %>% arrange(SNR, N, p_int)
@@ -221,10 +214,6 @@ grid.draw(z)
 summary_df <- full_df_sort %>% 
   filter(p_int < .05) %>% arrange(sort)
 
-summary_df %>% count()
-summary_df %>% group_by(SNR, N) %>% count() %>% ggplot(aes(N,nn)) + geom_point() + facet_grid(~SNR)
-
-
 ## Calculate number of disordinal interactions of p < .05
 disord_df <- full_df_sort %>% 
   filter(p_int < .05) %>% arrange(sort)
@@ -242,7 +231,11 @@ disord_df %>% group_by(SNR, N) %>%
 
 disord_df %>% group_by(SNR, N) %>% 
   summarise(percent_disordinal = prop.table(table(disord))[1]) %>% 
-  ggplot(aes(N,percent_disordinal, color=as.factor(SNR))) + geom_point(size =2) + geom_line()
+  ggplot(aes(N,percent_disordinal, color=as.factor(SNR))) + 
+  geom_point(size =2) + 
+  geom_line() + 
+  coord_cartesian(ylim = c(0,1)) +
+  ggtitle("Percentage of disordinal interactions at p < .05")
 
 
 ## Calculate disordinal interactions of p < .001
@@ -260,13 +253,30 @@ prop.table(table(disord_df$disord))
 disord_df %>% group_by(SNR, N) %>% 
   summarise(percent_disordinal = prop.table(table(disord))[1])
 
-disord_df %>% group_by(SNR, N) %>% 
-  summarise(percent_disordinal = prop.table(table(disord))[1]) %>% 
-  ggplot(aes(N,percent_disordinal)) + geom_point() + facet_grid(~SNR)
 
 disord_df %>% group_by(SNR, N) %>% 
   summarise(percent_disordinal = prop.table(table(disord))[1]) %>% 
-  ggplot(aes(N,percent_disordinal, color=as.factor(SNR))) + geom_point(size =2) + geom_line()
+  ggplot(aes(N,percent_disordinal, color=as.factor(SNR))) + 
+  geom_point(size =2) + 
+  geom_line() +
+  coord_cartesian(ylim = c(0,1)) +
+  ggtitle("Percentage of disordinal interactions at p < .001")
 
 
+# Model plot ----------------------------------
+# A plot of the basic effect we simulating. 
 
+Time <- as.factor(c("Level 1","Level 2","Level 1","Level 2"))
+Group <- as.factor(c("Condition 1","Condition 1","Condition 2","Condition 2"))
+Value <- c(0,0,0,1)
+
+df <- data.frame(Time, Group, Value)
+
+ggplot(df, aes(Time,Value, group=Group, color=Group)) + 
+  geom_line( size=1) + 
+  geom_point( size = 2) + 
+  scale_color_brewer(palette="Set1") + theme_bw() +
+  theme(legend.position="bottom",legend.title=element_blank(),panel.grid.minor=element_blank(), panel.grid.major.x = element_blank()) + 
+  xlab("") + ylab("") + coord_cartesian(ylim = c(-.5,1.2)) +
+  scale_y_continuous(breaks=seq(-.5, 1.5, .5)) +
+  ggtitle("Simulated True-Effect")
