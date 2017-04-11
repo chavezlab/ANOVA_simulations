@@ -2,7 +2,7 @@ library(dplyr)
 library(reshape2)
 library(neuRosim)
 library(oro.nifti)
-library(parallel)
+library(parallel) 
 
 
 # Make stimulus timing -------------------------------------------------
